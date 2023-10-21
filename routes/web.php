@@ -13,18 +13,31 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-use App\Http\Controllers\HomeController;
+// Route::get('/', function () {
+//     return view('welcome');
+// });
+
+
+use App\Http\Controllers\LoginController;
 use App\Http\Controllers\CustomerController;
 
 
-Route::get('/', function () {
-    return view('welcome');
+Route::get('/', [LoginController::class , 'login'])->name('login');
+Route::post('/submitlogin', [LoginController::class , 'submitlogin'])->name('submitlogin');
+Route::get('/logout', [LoginController::class , 'logout'])->name('logout');
+
+Route::middleware([checkAdministratorLogin::class])->group(function () {
+
+    Route::resource('customers', CustomerController::class)->names([
+        'index' => 'customers.index',
+        'create' => 'customers.create',
+        'store' => 'customers.store',
+        'show' => 'customers.show',
+        'edit' => 'customers.edit',
+        'update' => 'customers.update',
+        'destroy' => 'customers.destroy',
+    ]);
+
+
+    // Route::get('/customer-list', [CustomerController::class , 'dashboard'])->name('customerlist');
 });
-
-Auth::routes();
-
-Route::middleware(['auth'])->group(function () {
-    Route::resource('customers', CustomerController::class);
-});
-
-

@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Customer;
+use URL;
+use View;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Validator;
 
+use App\Models\Customer;
 
 class CustomerController extends Controller
 {
@@ -14,24 +18,7 @@ class CustomerController extends Controller
     public function index()
     {
         $custData = Customer::orderBy('id','desc')->get();
-        $tbl = '';
-        foreach($custData as $data){
-            $tbl .= '
-                <tr>
-                    <td>'. $data->first_name .'</td>
-                    <td>'. $data->last_name .'</td>
-                    <td>'. $data->email .'</td>
-                    <td>'. $data->phone .'</td>
-                    <td>
-                        <a route="'. route('customers.show') .'" class="btn btn-primary" href="javascript:void(0);" id="'.$data->id.'">Edit</a>
-                        <a class="btn btn-danger delete_user" href="javascript:void(0);" id="'.$data->id.'">Delete</a>
-
-                    </td>
-                </tr>
-            ';
-        }
-        return view('listing',['tbl' => $tbl]);
-        
+        return view('customer', compact('custData'));
     }
 
     /**
@@ -39,7 +26,8 @@ class CustomerController extends Controller
      */
     public function create()
     {
-        return view('home');
+        return view('customer');
+        
     }
 
     /**
@@ -51,14 +39,23 @@ class CustomerController extends Controller
             'first_name' => 'required',
             'last_name' => 'required',
             'email' => 'nullable|email',
-            'phone' => 'nullable'
+            'phone' => 'nullable|regex:/^\d{10}$/',
         ]);
     
-        $customer = new Customer;
-        $customer->fill($data);
+        if(!empty($request->id)){
+            $customer = Customer::find($request->id);
+            $msg = 'Customer updated successfully.';
+        } else {
+            $customer = new Customer;
+            $msg = 'Customer added successfully.';
+        }
+        $customer->first_name = $request->first_name;
+        $customer->last_name = $request->last_name;
+        $customer->email = $request->email;
+        $customer->phone = $request->phone;
         $customer->save();
 
-        return redirect()->route('customers.index')->with('success', 'Customer added successfully');
+        return redirect()->route('customers.index')->with('customersuccess', $msg);
 
     }
 
@@ -67,30 +64,25 @@ class CustomerController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $custData = Customer::orderBy('id','desc')->get();
+
+        $updData = Customer::where('id' , $id)->first();
+        return View::make('customer', [
+            'custData' => $custData,
+            'ban' => $updData,
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
 
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(string $id)
     {
-        //
+        $customer = Customer::findOrFail($id);
+        $customer->delete();
+
+        $msg = 'Customer deleted successfully.';
+        return redirect()->route('customers.index')->with('deletesuccess', $msg);
     }
 }
